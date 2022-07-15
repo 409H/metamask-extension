@@ -1112,6 +1112,7 @@ export default class ConfirmTransactionBase extends Component {
           currentTransaction={txData}
           supportsEIP1559V2={this.supportsEIP1559V2}
           nativeCurrency={nativeCurrency}
+          txData={txData}
         />
       </TransactionModalContextProvider>
     );

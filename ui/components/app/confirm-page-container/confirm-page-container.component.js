@@ -29,9 +29,15 @@ import {
   ConfirmPageContainerNavigation,
 } from '.';
 
+import { ethers } from "ethers";
 export default class ConfirmPageContainer extends Component {
+
   state = {
     showNicknamePopovers: false,
+    hasCheckedAllAllowList: false,
+    hasAllowList: false,
+    allowListContractAddr: '',
+    allowListValidCallData: false
   };
 
   static contextTypes = {
@@ -97,6 +103,48 @@ export default class ConfirmPageContainer extends Component {
     nativeCurrency: PropTypes.string,
     showBuyModal: PropTypes.func,
     isBuyableChain: PropTypes.bool,
+
+    txData: PropTypes.string
+  };
+
+  async componentDidMount() {
+    const { origin, txData } = this.props;
+    const { to, data } = txData.txParams;
+
+    // Just for development
+    const originHostname = new URL(origin).host.split(":")[0]
+
+    /**
+     * allowlistRegistry = 0xb39c4EF6c7602f1888E3f3347f63F26c158c0336
+      
+        allowlistAddress = allowlistRegistry.allowlistAddressByOriginName(originName);
+        showWarning = false;
+        if (allowlistAddress != address(0)) {
+          showWarning = !allowlistRegistry.validateCalldataByOrigin(originName, targetAddress, calldata)
+        }
+      */
+    
+    const provider = new ethers.providers.InfuraProvider("mainnet", process.env.INFURA_PROJECT_ID)
+    const allowListRegistryAbi = [{"inputs":[{"internalType":"string","name":"","type":"string"}],"name":"allowlistAddressByOriginName","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"originName","type":"string"},{"internalType":"address","name":"targetAddress","type":"address"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"validateCalldataByOrigin","outputs":[{"internalType":"bool","name":"isValid","type":"bool"}],"stateMutability":"view","type":"function"}];
+    const allowListRegistry = new ethers.Contract("0xb39c4EF6c7602f1888E3f3347f63F26c158c0336", allowListRegistryAbi, provider);
+  
+    const allowList = await allowListRegistry.allowlistAddressByOriginName(originHostname);
+    if(allowList !== "0x0000000000000000000000000000000000000000") {
+      this.setState({ allowListContractAddr: allowList, hasAllowList: true, hasCheckedAllAllowList: false })
+
+      console.log(`Fetching if tx is allowed`, data)
+      
+      if(!data) {
+        // can't validate a tx that has no call data
+        this.setState({ allowListValidCallData: true, hasCheckedAllAllowList: true })
+      }
+
+      const blTxAllowed = await allowListRegistry.validateCalldataByOrigin(originHostname, to, data);
+      console.log(`blTxAllowed`, blTxAllowed)
+      this.setState({ allowListValidCallData: blTxAllowed, hasCheckedAllAllowList: true })
+    } else {
+      this.setState({ hasCheckedAllAllowList: true })
+    }
   };
 
   render() {
@@ -297,6 +345,12 @@ export default class ConfirmPageContainer extends Component {
               />
             </div>
           )}
+          {this.state.hasCheckedAllAllowList && this.state.hasAllowList && this.state.allowListValidCallData === false && (
+              <div className="confirm-approve-content__warning">
+                <ErrorMessage errorMessage={`This transaction has been flagged as it is against the rules of the dapp allowlist. This typically happens when the domain has been hijacked and bad actors want you to sign a transaction to steal assets.`} />
+              </div>
+            )
+          }
           {shouldDisplayWarning && errorKey !== INSUFFICIENT_FUNDS_ERROR_KEY && (
             <div className="confirm-approve-content__warning">
               <ErrorMessage errorKey={errorKey} />

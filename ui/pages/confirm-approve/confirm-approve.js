@@ -129,6 +129,7 @@ export default function ConfirmApprove({
   }, [checkIfContract]);
 
   const { origin } = transaction;
+
   const formattedOrigin = origin || '';
 
   const { iconUrl: siteImage = '' } = subjectMetadata[origin] || {};

@@ -48,6 +48,9 @@ export default class ConfirmApproveContent extends Component {
     tokenBalance: PropTypes.string,
     data: PropTypes.string,
     toAddress: PropTypes.string,
+    hasAllowList: PropTypes.bool,
+    allowListContract: PropTypes.string,
+    callDataIsVerified: PropTypes.bool,
     currentCurrency: PropTypes.string,
     nativeCurrency: PropTypes.string,
     fiatTransactionTotal: PropTypes.string,
@@ -91,6 +94,7 @@ export default class ConfirmApproveContent extends Component {
   }) {
     const { supportsEIP1559V2 } = this.props;
     const { t } = this.context;
+
     return (
       <div
         className={classnames({
@@ -533,6 +537,24 @@ export default class ConfirmApproveContent extends Component {
       assetStandard,
     } = this.props;
     const { showFullTxDetails } = this.state;
+
+
+    const { hasAllowList, callDataIsVerified, allowListContract } = this.props;
+
+    // if(hasAllowList && callDataIsVerified === false) {
+    //   return(
+    //     <div className={classnames('confirm-approve-content', {
+    //       'confirm-approve-content--full': false,
+    //     })}>
+    //       <div className="confirm-approve-content__custom-nonce-warning">
+    //         The transaction content is not on the origins allow list. Typically this means the domain{' '}
+    //         has been hijacked and you are signing a transaction that was not intended by the legitimate{' '}
+    //         dapp. <br /><br />
+    //         AllowList: {allowListContract}
+    //       </div>
+    //     </div>
+    //   )
+    // }
 
     const titleTokenDescription = this.getTitleTokenDescription();
 
